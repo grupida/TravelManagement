@@ -96,7 +96,7 @@
         }
         
         .hidden {
-            display: none;
+            display: none !important;
         }
         
         .section {
@@ -110,6 +110,12 @@
             margin-bottom: 15px;
             color: #667eea;
             font-size: 1.4em;
+        }
+        
+        .section h3 {
+            margin-bottom: 10px;
+            color: #764ba2;
+            font-size: 1.1em;
         }
         
         .form-group {
@@ -141,6 +147,12 @@
         .form-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 15px;
         }
         
@@ -216,6 +228,16 @@
             color: white;
         }
         
+        .badge-international {
+            background: #ff5722;
+            color: white;
+        }
+        
+        .badge-domestic {
+            background: #03a9f4;
+            color: white;
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -228,6 +250,7 @@
             align-items: center;
             justify-content: center;
             overflow-y: auto;
+            padding: 20px;
         }
         
         .modal.active {
@@ -238,7 +261,7 @@
             background: white;
             padding: 30px;
             border-radius: 15px;
-            max-width: 800px;
+            max-width: 900px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
@@ -253,6 +276,14 @@
             padding: 15px;
             background: #e3f2fd;
             border-left: 4px solid #2196f3;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .warning {
+            padding: 15px;
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
             border-radius: 5px;
             margin-bottom: 20px;
         }
@@ -373,6 +404,29 @@
             font-size: 3em;
             margin-bottom: 15px;
         }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .detail-item {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -414,6 +468,11 @@
                             <option value="approved">Freigegeben</option>
                             <option value="booked">Gebucht</option>
                         </select>
+                        <select id="typeFilter" onchange="loadRequests()">
+                            <option value="">Inland & Ausland</option>
+                            <option value="0">Nur Inland</option>
+                            <option value="1">Nur Ausland</option>
+                        </select>
                         <input type="text" id="searchFilter" placeholder="Suche..." onkeyup="loadRequests()">
                     </div>
                     <div id="requestsTable"></div>
@@ -451,6 +510,10 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
+                            <label>Privatadresse</label>
+                            <input type="text" id="reqPrivateAddress" placeholder="Straße, PLZ, Ort">
+                        </div>
+                        <div class="form-group">
                             <label>Reisezweck *</label>
                             <select id="reqPurpose" required>
                                 <option value="">Bitte wählen...</option>
@@ -461,10 +524,10 @@
                                 <option value="sonstiges">Sonstiges</option>
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label>Projekt / Kostenstelle *</label>
-                            <input type="text" id="reqProject" required>
-                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Projekt / Kostenstelle *</label>
+                        <input type="text" id="reqProject" required>
                     </div>
                 </div>
                 
@@ -472,67 +535,179 @@
                     <h3>Reisedaten</h3>
                     <div class="form-row">
                         <div class="form-group">
+                            <label>Inland oder Ausland? *</label>
+                            <select id="reqIsInternational" onchange="toggleInternationalFields()" required>
+                                <option value="0">Inland</option>
+                                <option value="1">Ausland</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Zielort *</label>
                             <input type="text" id="reqDestination" placeholder="z.B. München" required>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Einsatzadresse</label>
+                        <input type="text" id="reqAddress">
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
-                            <label>Einsatzadresse</label>
-                            <input type="text" id="reqAddress">
+                            <label>Anreise Datum *</label>
+                            <input type="date" id="reqFrom" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Anreise Uhrzeit</label>
+                            <input type="time" id="reqArrivalTime">
                         </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Von *</label>
-                            <input type="date" id="reqFrom" required>
+                            <label>Abreise Datum *</label>
+                            <input type="date" id="reqTo" required>
                         </div>
                         <div class="form-group">
-                            <label>Bis *</label>
-                            <input type="date" id="reqTo" required>
+                            <label>Abreise Uhrzeit</label>
+                            <input type="time" id="reqDepartureTime">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Inland Felder -->
+                <div class="section" id="domesticSection">
+                    <h3>🇩🇪 Inland - Anreise</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Anreise mit *</label>
+                            <select id="reqTransportType">
+                                <option value="pkw">Privat-PKW</option>
+                                <option value="firmenwagen">Firmenwagen</option>
+                                <option value="zug">Zug</option>
+                                <option value="sonstiges">Sonstiges</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="licensePlateGroup">
+                            <label>Kennzeichen (bei PKW/Firmenwagen)</label>
+                            <input type="text" id="reqLicensePlate" placeholder="z.B. M-AB 1234">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Ausland Felder -->
+                <div class="section hidden" id="internationalSection">
+                    <h3>🌍 Ausland - Details</h3>
+                    <div class="warning">
+                        <strong>⚠️ Auslandsreisen:</strong> Benötigen Freigabe durch Projektleiter
+                    </div>
+                    <div class="form-group">
+                        <label>Projektleiter E-Mail *</label>
+                        <input type="email" id="reqProjectManagerEmail" placeholder="projektleiter@firma.de">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Ausweispapiere vorhanden?</label>
+                            <select id="reqHasPassport">
+                                <option value="1">Ja</option>
+                                <option value="0">Nein</option>
+                            </select>
+                            <small style="color: #999; display: block; margin-top: 5px;">📄 Upload-Funktion kommt in Phase 2</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Wird Flug benötigt?</label>
+                            <select id="reqNeedsFlight" onchange="toggleFlightFields()">
+                                <option value="0">Nein</option>
+                                <option value="1">Ja</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="flightSection" class="hidden">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Anzahl Gepäckstücke</label>
+                                <input type="number" id="reqLuggageCount" min="0" max="5" value="1">
+                            </div>
+                            <div class="form-group">
+                                <label>Transfer zum Flughafen benötigt?</label>
+                                <select id="reqNeedsTransfer">
+                                    <option value="0">Nein</option>
+                                    <option value="1">Ja</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Abflughafen</label>
+                                <input type="text" id="reqDepartureAirport" placeholder="z.B. Frankfurt (FRA)">
+                            </div>
+                            <div class="form-group">
+                                <label>Zielflughafen</label>
+                                <input type="text" id="reqArrivalAirport" placeholder="z.B. New York (JFK)">
+                            </div>
                         </div>
                     </div>
                 </div>
                 
                 <div class="section">
-                    <h3>Hotel-Anforderungen</h3>
+                    <h3>Unterkunft & Sonstiges</h3>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Hotelstandard</label>
-                            <select id="reqHotelStandard">
-                                <option value="budget">Budget</option>
-                                <option value="mittel" selected>Mittelklasse</option>
-                                <option value="gehoben">Gehoben</option>
+                            <label>Unterkunft benötigt?</label>
+                            <select id="reqNeedsAccommodation" onchange="toggleHotelFields()">
+                                <option value="yes">Ja</option>
+                                <option value="no">Nein, wird vom Kunden organisiert</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label>Max. Budget/Nacht (EUR)</label>
-                            <input type="number" id="reqMaxBudget" value="100">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="reqBreakfast" checked> Frühstück erforderlich
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="reqParking"> Parken erforderlich
-                            </label>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="reqFlexible" checked> Flexibel stornierbar
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label>Lagepräferenz</label>
-                            <select id="reqLocation">
-                                <option value="einsatzort">Nah am Einsatzort</option>
-                                <option value="bahnhof">Bahnhof/Flughafen</option>
-                                <option value="city">City</option>
+                            <label>Mietauto benötigt?</label>
+                            <select id="reqNeedsRentalCar">
+                                <option value="0">Nein, wird vom Kunden organisiert</option>
+                                <option value="1">Ja</option>
                             </select>
+                        </div>
+                    </div>
+                    
+                    <div id="hotelSection">
+                        <h4 style="margin-top: 15px; margin-bottom: 10px; color: #667eea;">Hotel-Anforderungen</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Hotelstandard</label>
+                                <select id="reqHotelStandard">
+                                    <option value="budget">Budget</option>
+                                    <option value="mittel" selected>Mittelklasse</option>
+                                    <option value="gehoben">Gehoben</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Max. Budget/Nacht (EUR)</label>
+                                <input type="number" id="reqMaxBudget" value="100">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="reqBreakfast" checked> Frühstück erforderlich
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="reqParking"> Parken erforderlich
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="reqFlexible" checked> Flexibel stornierbar
+                                </label>
+                            </div>
+                            <div class="form-group">
+                                <label>Lagepräferenz</label>
+                                <select id="reqLocation">
+                                    <option value="einsatzort">Nah am Einsatzort</option>
+                                    <option value="bahnhof">Bahnhof/Flughafen</option>
+                                    <option value="city">City</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -550,6 +725,15 @@
         </div>
     </div>
     
+    <!-- Details Modal -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <h2>Reisedetails</h2>
+            <div id="detailsContent"></div>
+            <button class="btn-secondary" style="margin-top: 20px;" onclick="closeModal('detailsModal')">Schließen</button>
+        </div>
+    </div>
+    
     <!-- Optionen ansehen Modal -->
     <div class="modal" id="optionsModal">
         <div class="modal-content">
@@ -561,66 +745,101 @@
     <!-- Optionen erstellen Modal (Travel Desk) -->
     <div class="modal" id="createOptionsModal">
         <div class="modal-content">
-            <h2>Optionen erstellen</h2>
+            <h2>Optionen erstellen / Direkt buchen</h2>
             <div id="requestDetails"></div>
-            <div class="section">
-                <h3>Option A</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Hotelname</label>
-                        <input type="text" id="optAName">
+            
+            <div class="form-group" style="margin-top: 20px;">
+                <label>
+                    <input type="checkbox" id="directBooking" onchange="toggleOptionsFields()"> 
+                    <strong>Direkt buchen (ohne Optionen an Mitarbeiter)</strong>
+                </label>
+                <small style="color: #999; display: block; margin-top: 5px;">Travel Desk bucht direkt für den Mitarbeiter</small>
+            </div>
+            
+            <div id="optionsFields">
+                <div class="section">
+                    <h3>Option A</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hotelname</label>
+                            <input type="text" id="optAName">
+                        </div>
+                        <div class="form-group">
+                            <label>Preis/Nacht (EUR)</label>
+                            <input type="number" id="optAPrice">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Preis/Nacht (EUR)</label>
-                        <input type="number" id="optAPrice">
+                        <label>Beschreibung</label>
+                        <textarea id="optADesc"></textarea>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label>Beschreibung</label>
-                    <textarea id="optADesc"></textarea>
+                
+                <div class="section">
+                    <h3>Option B</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hotelname</label>
+                            <input type="text" id="optBName">
+                        </div>
+                        <div class="form-group">
+                            <label>Preis/Nacht (EUR)</label>
+                            <input type="number" id="optBPrice">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Beschreibung</label>
+                        <textarea id="optBDesc"></textarea>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>Option C (Optional)</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hotelname</label>
+                            <input type="text" id="optCName">
+                        </div>
+                        <div class="form-group">
+                            <label>Preis/Nacht (EUR)</label>
+                            <input type="number" id="optCPrice">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Beschreibung</label>
+                        <textarea id="optCDesc"></textarea>
+                    </div>
                 </div>
             </div>
             
-            <div class="section">
-                <h3>Option B</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Hotelname</label>
-                        <input type="text" id="optBName">
+            <div id="directBookingFields" class="hidden">
+                <div class="section">
+                    <h3>Direkt-Buchung</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Hotelname *</label>
+                            <input type="text" id="directHotelName">
+                        </div>
+                        <div class="form-group">
+                            <label>Preis/Nacht (EUR) *</label>
+                            <input type="number" id="directPrice">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Preis/Nacht (EUR)</label>
-                        <input type="number" id="optBPrice">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Beschreibung</label>
-                    <textarea id="optBDesc"></textarea>
-                </div>
-            </div>
-            
-            <div class="section">
-                <h3>Option C (Optional)</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Hotelname</label>
-                        <input type="text" id="optCName">
+                        <label>Buchungsdetails</label>
+                        <textarea id="directDetails" placeholder="Check-In/Out, Adresse, Besonderheiten..."></textarea>
                     </div>
                     <div class="form-group">
-                        <label>Preis/Nacht (EUR)</label>
-                        <input type="number" id="optCPrice">
+                        <label>Bestätigungscode</label>
+                        <input type="text" id="directConfirmation" placeholder="z.B. ABC123456">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Beschreibung</label>
-                    <textarea id="optCDesc"></textarea>
                 </div>
             </div>
             
             <input type="hidden" id="currentRequestId">
             
             <div style="margin-top: 20px; display: flex; gap: 10px;">
-                <button class="btn-success" onclick="saveOptions()">Optionen senden</button>
+                <button class="btn-success" onclick="saveOptionsOrBooking()">Speichern</button>
                 <button class="btn-secondary" onclick="closeModal('createOptionsModal')">Abbrechen</button>
             </div>
         </div>
@@ -630,7 +849,7 @@
         // Globale Variablen
         let db = null;
         let currentMode = 'mitarbeiter';
-        let currentUser = 'Max Mustermann'; // Demo User
+        let currentUser = 'Max Mustermann';
         
         // SQL.js initialisieren
         initSqlJs({
@@ -645,6 +864,7 @@
             if (savedData) {
                 const binaryData = Uint8Array.from(atob(savedData), c => c.charCodeAt(0));
                 db = new SQL.Database(binaryData);
+                migrateDatabase();
             } else {
                 db = new SQL.Database();
                 createTables();
@@ -661,12 +881,27 @@
                     department TEXT,
                     email TEXT NOT NULL,
                     phone TEXT,
+                    private_address TEXT,
                     purpose TEXT NOT NULL,
                     project TEXT NOT NULL,
                     destination TEXT NOT NULL,
                     address TEXT,
                     date_from TEXT NOT NULL,
                     date_to TEXT NOT NULL,
+                    arrival_time TEXT,
+                    departure_time TEXT,
+                    is_international INTEGER DEFAULT 0,
+                    project_manager_email TEXT,
+                    has_passport INTEGER,
+                    needs_flight INTEGER DEFAULT 0,
+                    luggage_count INTEGER,
+                    departure_airport TEXT,
+                    arrival_airport TEXT,
+                    needs_transfer INTEGER DEFAULT 0,
+                    transport_type TEXT,
+                    license_plate TEXT,
+                    needs_accommodation TEXT DEFAULT 'yes',
+                    needs_rental_car INTEGER DEFAULT 0,
                     hotel_standard TEXT,
                     max_budget REAL,
                     breakfast INTEGER,
@@ -696,10 +931,64 @@
                     confirmation_code TEXT,
                     payment_method TEXT,
                     booking_date TEXT,
+                    booking_details TEXT,
                     FOREIGN KEY (request_id) REFERENCES requests(id),
                     FOREIGN KEY (option_id) REFERENCES options(id)
                 );
             `);
+            
+            saveDatabase();
+        }
+        
+        function migrateDatabase() {
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN arrival_time TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN departure_time TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN is_international INTEGER DEFAULT 0`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN project_manager_email TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN has_passport INTEGER`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN needs_flight INTEGER DEFAULT 0`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN luggage_count INTEGER`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN departure_airport TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN arrival_airport TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN needs_transfer INTEGER DEFAULT 0`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN transport_type TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN license_plate TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN needs_accommodation TEXT DEFAULT 'yes'`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN needs_rental_car INTEGER DEFAULT 0`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE requests ADD COLUMN private_address TEXT`);
+            } catch(e) {}
+            try {
+                db.run(`ALTER TABLE bookings ADD COLUMN booking_details TEXT`);
+            } catch(e) {}
             
             saveDatabase();
         }
@@ -746,26 +1035,69 @@
             }
         }
         
+        // Form Logic
+        function toggleInternationalFields() {
+            const isIntl = document.getElementById('reqIsInternational').value === '1';
+            document.getElementById('domesticSection').classList.toggle('hidden', isIntl);
+            document.getElementById('internationalSection').classList.toggle('hidden', !isIntl);
+        }
+        
+        function toggleFlightFields() {
+            const needsFlight = document.getElementById('reqNeedsFlight').value === '1';
+            document.getElementById('flightSection').classList.toggle('hidden', !needsFlight);
+        }
+        
+        function toggleHotelFields() {
+            const needs = document.getElementById('reqNeedsAccommodation').value === 'yes';
+            document.getElementById('hotelSection').classList.toggle('hidden', !needs);
+        }
+        
+        function toggleOptionsFields() {
+            const isDirect = document.getElementById('directBooking').checked;
+            document.getElementById('optionsFields').classList.toggle('hidden', isDirect);
+            document.getElementById('directBookingFields').classList.toggle('hidden', !isDirect);
+        }
+        
         // Reiseanfrage Modal
         function showRequestModal() {
             document.getElementById('requestForm').reset();
+            toggleInternationalFields();
+            toggleFlightFields();
+            toggleHotelFields();
             document.getElementById('requestModal').classList.add('active');
         }
         
         document.getElementById('requestForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
+            const isIntl = document.getElementById('reqIsInternational').value === '1';
+            
             const data = {
                 requester_name: document.getElementById('reqName').value,
                 department: document.getElementById('reqDepartment').value,
                 email: document.getElementById('reqEmail').value,
                 phone: document.getElementById('reqPhone').value,
+                private_address: document.getElementById('reqPrivateAddress').value,
                 purpose: document.getElementById('reqPurpose').value,
                 project: document.getElementById('reqProject').value,
                 destination: document.getElementById('reqDestination').value,
                 address: document.getElementById('reqAddress').value,
                 date_from: document.getElementById('reqFrom').value,
                 date_to: document.getElementById('reqTo').value,
+                arrival_time: document.getElementById('reqArrivalTime').value,
+                departure_time: document.getElementById('reqDepartureTime').value,
+                is_international: isIntl ? 1 : 0,
+                project_manager_email: isIntl ? document.getElementById('reqProjectManagerEmail').value : null,
+                has_passport: isIntl ? parseInt(document.getElementById('reqHasPassport').value) : null,
+                needs_flight: isIntl ? parseInt(document.getElementById('reqNeedsFlight').value) : 0,
+                luggage_count: isIntl && document.getElementById('reqNeedsFlight').value === '1' ? parseInt(document.getElementById('reqLuggageCount').value) : null,
+                departure_airport: isIntl ? document.getElementById('reqDepartureAirport').value : null,
+                arrival_airport: isIntl ? document.getElementById('reqArrivalAirport').value : null,
+                needs_transfer: isIntl ? parseInt(document.getElementById('reqNeedsTransfer').value) : 0,
+                transport_type: !isIntl ? document.getElementById('reqTransportType').value : null,
+                license_plate: !isIntl ? document.getElementById('reqLicensePlate').value : null,
+                needs_accommodation: document.getElementById('reqNeedsAccommodation').value,
+                needs_rental_car: parseInt(document.getElementById('reqNeedsRentalCar').value),
                 hotel_standard: document.getElementById('reqHotelStandard').value,
                 max_budget: document.getElementById('reqMaxBudget').value,
                 breakfast: document.getElementById('reqBreakfast').checked ? 1 : 0,
@@ -777,17 +1109,29 @@
                 updated_at: new Date().toISOString()
             };
             
+            if (isIntl && !data.project_manager_email) {
+                alert('Bei Auslandsreisen ist die Projektleiter-Email erforderlich!');
+                return;
+            }
+            
             try {
                 db.run(`INSERT INTO requests (
-                    requester_name, department, email, phone, purpose, project, destination, address,
-                    date_from, date_to, hotel_standard, max_budget, breakfast, parking, flexible,
-                    location_pref, notes, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?)`,
+                    requester_name, department, email, phone, private_address, purpose, project, destination, address,
+                    date_from, date_to, arrival_time, departure_time, is_international, project_manager_email,
+                    has_passport, needs_flight, luggage_count, departure_airport, arrival_airport, needs_transfer,
+                    transport_type, license_plate, needs_accommodation, needs_rental_car,
+                    hotel_standard, max_budget, breakfast, parking, flexible, location_pref, notes,
+                    status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'submitted', ?, ?)`,
                 [
-                    data.requester_name, data.department, data.email, data.phone, data.purpose,
-                    data.project, data.destination, data.address, data.date_from, data.date_to,
-                    data.hotel_standard, data.max_budget, data.breakfast, data.parking, data.flexible,
-                    data.location_pref, data.notes, data.created_at, data.updated_at
+                    data.requester_name, data.department, data.email, data.phone, data.private_address,
+                    data.purpose, data.project, data.destination, data.address, data.date_from, data.date_to,
+                    data.arrival_time, data.departure_time, data.is_international, data.project_manager_email,
+                    data.has_passport, data.needs_flight, data.luggage_count, data.departure_airport,
+                    data.arrival_airport, data.needs_transfer, data.transport_type, data.license_plate,
+                    data.needs_accommodation, data.needs_rental_car, data.hotel_standard, data.max_budget,
+                    data.breakfast, data.parking, data.flexible, data.location_pref, data.notes,
+                    data.created_at, data.updated_at
                 ]);
                 
                 if (saveDatabase()) {
@@ -813,11 +1157,17 @@
                 
                 const card = document.createElement('div');
                 card.className = 'section';
+                
+                const intlBadge = req.is_international ? ' <span class="badge badge-international">🌍 Ausland</span>' : ' <span class="badge badge-domestic">🇩🇪 Inland</span>';
+                
                 card.innerHTML = `
-                    <h3>${req.destination} (${formatDate(req.date_from)} - ${formatDate(req.date_to)})</h3>
+                    <h3>${req.destination} (${formatDate(req.date_from)} - ${formatDate(req.date_to)})${intlBadge}</h3>
                     <p><strong>Zweck:</strong> ${req.purpose} | <strong>Projekt:</strong> ${req.project}</p>
                     <p><strong>Status:</strong> ${getStatusBadge(req.status)}</p>
-                    ${req.status === 'options' ? `<button class="btn-primary btn-small" onclick="viewOptions(${req.id})">Optionen ansehen</button>` : ''}
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        ${req.status === 'options' ? `<button class="btn-primary btn-small" onclick="viewOptions(${req.id})">Optionen ansehen</button>` : ''}
+                        ${req.status === 'booked' ? `<button class="btn-secondary btn-small" onclick="viewRequestDetails(${req.id}, true)">Details ansehen</button>` : ''}
+                    </div>
                 `;
                 container.appendChild(card);
             }
@@ -931,6 +1281,7 @@
         
         function loadRequests() {
             const statusFilter = document.getElementById('statusFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
             const searchFilter = document.getElementById('searchFilter').value.toLowerCase();
             
             let query = 'SELECT * FROM requests WHERE 1=1';
@@ -941,13 +1292,18 @@
                 params.push(statusFilter);
             }
             
+            if (typeFilter !== '') {
+                query += ' AND is_international = ?';
+                params.push(parseInt(typeFilter));
+            }
+            
             query += ' ORDER BY created_at DESC';
             
             const stmt = db.prepare(query);
             stmt.bind(params);
             
             const container = document.getElementById('requestsTable');
-            let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Ziel</th><th>Zeitraum</th><th>Projekt</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>ID</th><th>Name</th><th>Ziel</th><th>Art</th><th>Zeitraum</th><th>Projekt</th><th>Status</th><th>Aktionen</th></tr></thead><tbody>';
             
             let hasRows = false;
             while (stmt.step()) {
@@ -958,18 +1314,21 @@
                 }
                 
                 hasRows = true;
+                const typeBadge = req.is_international ? '<span class="badge badge-international">🌍</span>' : '<span class="badge badge-domestic">🇩🇪</span>';
+                
                 html += `<tr>
                     <td>${req.id}</td>
                     <td>${req.requester_name}</td>
                     <td>${req.destination}</td>
+                    <td>${typeBadge}</td>
                     <td>${formatDate(req.date_from)} - ${formatDate(req.date_to)}</td>
                     <td>${req.project}</td>
                     <td>${getStatusBadge(req.status)}</td>
                     <td>
                         ${req.status === 'submitted' ? `<button class="btn-primary btn-small" onclick="startReview(${req.id})">Bearbeiten</button>` : ''}
-                        ${req.status === 'review' ? `<button class="btn-success btn-small" onclick="showCreateOptions(${req.id})">Optionen erstellen</button>` : ''}
+                        ${req.status === 'review' ? `<button class="btn-success btn-small" onclick="showCreateOptions(${req.id})">Optionen / Buchen</button>` : ''}
                         ${req.status === 'approved' ? `<button class="btn-warning btn-small" onclick="completeBooking(${req.id})">Buchen</button>` : ''}
-                        <button class="btn-secondary btn-small" onclick="viewRequestDetails(${req.id})">Details</button>
+                        <button class="btn-secondary btn-small" onclick="viewRequestDetails(${req.id}, false)">Details</button>
                     </td>
                 </tr>`;
             }
@@ -1004,15 +1363,36 @@
             stmt.free();
             
             document.getElementById('currentRequestId').value = requestId;
+            document.getElementById('directBooking').checked = false;
+            toggleOptionsFields();
             
             const nights = calculateNights(req.date_from, req.date_to);
+            const typeBadge = req.is_international ? '<span class="badge badge-international">🌍 Ausland</span>' : '<span class="badge badge-domestic">🇩🇪 Inland</span>';
+            
             document.getElementById('requestDetails').innerHTML = `
                 <div class="info">
-                    <strong>Anfrage #${req.id}:</strong> ${req.requester_name}<br>
+                    <strong>Anfrage #${req.id}:</strong> ${req.requester_name} ${typeBadge}<br>
                     <strong>Ziel:</strong> ${req.destination} | <strong>Zeitraum:</strong> ${formatDate(req.date_from)} - ${formatDate(req.date_to)} (${nights} Nächte)<br>
-                    <strong>Budget:</strong> max. ${req.max_budget} EUR/Nacht | <strong>Frühstück:</strong> ${req.breakfast ? 'Ja' : 'Nein'} | <strong>Parken:</strong> ${req.parking ? 'Ja' : 'Nein'}
+                    ${req.arrival_time ? `<strong>Anreise:</strong> ${req.arrival_time} Uhr | ` : ''}
+                    ${req.departure_time ? `<strong>Abreise:</strong> ${req.departure_time} Uhr<br>` : '<br>'}
+                    ${req.needs_accommodation === 'yes' ? `<strong>Budget:</strong> max. ${req.max_budget} EUR/Nacht | <strong>Frühstück:</strong> ${req.breakfast ? 'Ja' : 'Nein'} | <strong>Parken:</strong> ${req.parking ? 'Ja' : 'Nein'}` : '<strong>Unterkunft:</strong> Wird vom Kunden organisiert'}
                 </div>
             `;
+            
+            // Clear all fields
+            document.getElementById('optAName').value = '';
+            document.getElementById('optAPrice').value = '';
+            document.getElementById('optADesc').value = '';
+            document.getElementById('optBName').value = '';
+            document.getElementById('optBPrice').value = '';
+            document.getElementById('optBDesc').value = '';
+            document.getElementById('optCName').value = '';
+            document.getElementById('optCPrice').value = '';
+            document.getElementById('optCDesc').value = '';
+            document.getElementById('directHotelName').value = '';
+            document.getElementById('directPrice').value = '';
+            document.getElementById('directDetails').value = '';
+            document.getElementById('directConfirmation').value = '';
             
             // Load existing options if any
             const optStmt = db.prepare('SELECT * FROM options WHERE request_id = ? ORDER BY option_letter');
@@ -1039,62 +1419,90 @@
             document.getElementById('createOptionsModal').classList.add('active');
         }
         
-        function saveOptions() {
+        function saveOptionsOrBooking() {
             const requestId = parseInt(document.getElementById('currentRequestId').value);
+            const isDirect = document.getElementById('directBooking').checked;
             
-            const optA = {
-                letter: 'A',
-                name: document.getElementById('optAName').value,
-                price: parseFloat(document.getElementById('optAPrice').value),
-                desc: document.getElementById('optADesc').value
-            };
-            
-            const optB = {
-                letter: 'B',
-                name: document.getElementById('optBName').value,
-                price: parseFloat(document.getElementById('optBPrice').value),
-                desc: document.getElementById('optBDesc').value
-            };
-            
-            const optC = {
-                letter: 'C',
-                name: document.getElementById('optCName').value,
-                price: parseFloat(document.getElementById('optCPrice').value) || null,
-                desc: document.getElementById('optCDesc').value
-            };
-            
-            if (!optA.name || !optA.price || !optB.name || !optB.price) {
-                alert('Bitte mindestens Option A und B ausfüllen!');
-                return;
-            }
-            
-            try {
-                // Delete old options
-                db.run('DELETE FROM options WHERE request_id = ?', [requestId]);
+            if (isDirect) {
+                // Direkt-Buchung
+                const hotelName = document.getElementById('directHotelName').value.trim();
+                const price = parseFloat(document.getElementById('directPrice').value);
+                const details = document.getElementById('directDetails').value.trim();
+                const confirmation = document.getElementById('directConfirmation').value.trim();
                 
-                // Insert new options
-                db.run('INSERT INTO options (request_id, option_letter, hotel_name, price_per_night, description) VALUES (?, ?, ?, ?, ?)',
-                    [requestId, optA.letter, optA.name, optA.price, optA.desc]);
-                db.run('INSERT INTO options (request_id, option_letter, hotel_name, price_per_night, description) VALUES (?, ?, ?, ?, ?)',
-                    [requestId, optB.letter, optB.name, optB.price, optB.desc]);
+                if (!hotelName || !price) {
+                    alert('Bitte Hotelname und Preis ausfüllen!');
+                    return;
+                }
                 
-                if (optC.name && optC.price) {
+                try {
+                    db.run('UPDATE requests SET status = ? WHERE id = ?', ['booked', requestId]);
+                    db.run('INSERT INTO bookings (request_id, confirmation_code, booking_date, booking_details) VALUES (?, ?, ?, ?)',
+                        [requestId, confirmation, new Date().toISOString(), `Hotel: ${hotelName}, ${price} EUR/Nacht. ${details}`]);
+                    
+                    if (saveDatabase()) {
+                        closeModal('createOptionsModal');
+                        showToast('✓ Direkt-Buchung erfolgreich!');
+                        loadStats();
+                        loadRequests();
+                    }
+                } catch (err) {
+                    alert('Fehler: ' + err.message);
+                    console.error(err);
+                }
+            } else {
+                // Optionen erstellen
+                const optA = {
+                    letter: 'A',
+                    name: document.getElementById('optAName').value,
+                    price: parseFloat(document.getElementById('optAPrice').value),
+                    desc: document.getElementById('optADesc').value
+                };
+                
+                const optB = {
+                    letter: 'B',
+                    name: document.getElementById('optBName').value,
+                    price: parseFloat(document.getElementById('optBPrice').value),
+                    desc: document.getElementById('optBDesc').value
+                };
+                
+                const optC = {
+                    letter: 'C',
+                    name: document.getElementById('optCName').value,
+                    price: parseFloat(document.getElementById('optCPrice').value) || null,
+                    desc: document.getElementById('optCDesc').value
+                };
+                
+                if (!optA.name || !optA.price || !optB.name || !optB.price) {
+                    alert('Bitte mindestens Option A und B ausfüllen!');
+                    return;
+                }
+                
+                try {
+                    db.run('DELETE FROM options WHERE request_id = ?', [requestId]);
+                    
                     db.run('INSERT INTO options (request_id, option_letter, hotel_name, price_per_night, description) VALUES (?, ?, ?, ?, ?)',
-                        [requestId, optC.letter, optC.name, optC.price, optC.desc]);
+                        [requestId, optA.letter, optA.name, optA.price, optA.desc]);
+                    db.run('INSERT INTO options (request_id, option_letter, hotel_name, price_per_night, description) VALUES (?, ?, ?, ?, ?)',
+                        [requestId, optB.letter, optB.name, optB.price, optB.desc]);
+                    
+                    if (optC.name && optC.price) {
+                        db.run('INSERT INTO options (request_id, option_letter, hotel_name, price_per_night, description) VALUES (?, ?, ?, ?, ?)',
+                            [requestId, optC.letter, optC.name, optC.price, optC.desc]);
+                    }
+                    
+                    db.run('UPDATE requests SET status = ? WHERE id = ?', ['options', requestId]);
+                    
+                    if (saveDatabase()) {
+                        closeModal('createOptionsModal');
+                        showToast('✓ Optionen gespeichert und an Mitarbeiter gesendet!');
+                        loadStats();
+                        loadRequests();
+                    }
+                } catch (err) {
+                    alert('Fehler: ' + err.message);
+                    console.error(err);
                 }
-                
-                // Update request status
-                db.run('UPDATE requests SET status = ? WHERE id = ?', ['options', requestId]);
-                
-                if (saveDatabase()) {
-                    closeModal('createOptionsModal');
-                    showToast('✓ Optionen gespeichert und an Mitarbeiter gesendet!');
-                    loadStats();
-                    loadRequests();
-                }
-            } catch (err) {
-                alert('Fehler: ' + err.message);
-                console.error(err);
             }
         }
         
@@ -1116,7 +1524,7 @@
             }
         }
         
-        function viewRequestDetails(requestId) {
+        function viewRequestDetails(requestId, isEmployee) {
             const stmt = db.prepare('SELECT * FROM requests WHERE id = ?');
             stmt.bind([requestId]);
             
@@ -1125,33 +1533,100 @@
             stmt.free();
             
             const nights = calculateNights(req.date_from, req.date_to);
+            const typeBadge = req.is_international ? '<span class="badge badge-international">🌍 Ausland</span>' : '<span class="badge badge-domestic">🇩🇪 Inland</span>';
             
-            alert(`Reiseanfrage #${req.id}
+            let html = '<div class="detail-grid">';
             
-Name: ${req.requester_name}
-Abteilung: ${req.department || '-'}
-E-Mail: ${req.email}
-Telefon: ${req.phone || '-'}
-
-Zweck: ${req.purpose}
-Projekt: ${req.project}
-
-Ziel: ${req.destination}
-Adresse: ${req.address || '-'}
-Zeitraum: ${formatDate(req.date_from)} - ${formatDate(req.date_to)} (${nights} Nächte)
-
-Hotelstandard: ${req.hotel_standard}
-Max. Budget: ${req.max_budget} EUR/Nacht
-Frühstück: ${req.breakfast ? 'Ja' : 'Nein'}
-Parken: ${req.parking ? 'Ja' : 'Nein'}
-Flexibel stornierbar: ${req.flexible ? 'Ja' : 'Nein'}
-Lagepräferenz: ${req.location_pref}
-
-Besondere Anforderungen:
-${req.notes || '-'}
-
-Status: ${req.status}
-Erstellt: ${new Date(req.created_at).toLocaleString('de-DE')}`);
+            html += `<div class="detail-item"><div class="detail-label">Status</div><div class="detail-value">${getStatusBadge(req.status)}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Art</div><div class="detail-value">${typeBadge}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Name</div><div class="detail-value">${req.requester_name}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Abteilung</div><div class="detail-value">${req.department || '-'}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">E-Mail</div><div class="detail-value">${req.email}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Telefon</div><div class="detail-value">${req.phone || '-'}</div></div>`;
+            
+            if (req.private_address) {
+                html += `<div class="detail-item"><div class="detail-label">Privatadresse</div><div class="detail-value">${req.private_address}</div></div>`;
+            }
+            
+            html += `<div class="detail-item"><div class="detail-label">Zweck</div><div class="detail-value">${req.purpose}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Projekt</div><div class="detail-value">${req.project}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Ziel</div><div class="detail-value">${req.destination}</div></div>`;
+            
+            if (req.address) {
+                html += `<div class="detail-item"><div class="detail-label">Einsatzadresse</div><div class="detail-value">${req.address}</div></div>`;
+            }
+            
+            html += `<div class="detail-item"><div class="detail-label">Zeitraum</div><div class="detail-value">${formatDate(req.date_from)} - ${formatDate(req.date_to)} (${nights} Nächte)</div></div>`;
+            
+            if (req.arrival_time) {
+                html += `<div class="detail-item"><div class="detail-label">Anreise</div><div class="detail-value">${req.arrival_time} Uhr</div></div>`;
+            }
+            if (req.departure_time) {
+                html += `<div class="detail-item"><div class="detail-label">Abreise</div><div class="detail-value">${req.departure_time} Uhr</div></div>`;
+            }
+            
+            if (req.is_international) {
+                if (req.project_manager_email) {
+                    html += `<div class="detail-item"><div class="detail-label">Projektleiter</div><div class="detail-value">${req.project_manager_email}</div></div>`;
+                }
+                html += `<div class="detail-item"><div class="detail-label">Ausweispapiere</div><div class="detail-value">${req.has_passport ? 'Ja' : 'Nein'}</div></div>`;
+                if (req.needs_flight) {
+                    html += `<div class="detail-item"><div class="detail-label">Flug</div><div class="detail-value">Ja${req.luggage_count ? `, ${req.luggage_count} Gepäckstück(e)` : ''}</div></div>`;
+                    if (req.departure_airport) html += `<div class="detail-item"><div class="detail-label">Abflughafen</div><div class="detail-value">${req.departure_airport}</div></div>`;
+                    if (req.arrival_airport) html += `<div class="detail-item"><div class="detail-label">Zielflughafen</div><div class="detail-value">${req.arrival_airport}</div></div>`;
+                    html += `<div class="detail-item"><div class="detail-label">Transfer</div><div class="detail-value">${req.needs_transfer ? 'Ja' : 'Nein'}</div></div>`;
+                }
+            } else {
+                if (req.transport_type) {
+                    html += `<div class="detail-item"><div class="detail-label">Anreise mit</div><div class="detail-value">${req.transport_type}</div></div>`;
+                }
+                if (req.license_plate) {
+                    html += `<div class="detail-item"><div class="detail-label">Kennzeichen</div><div class="detail-value">${req.license_plate}</div></div>`;
+                }
+            }
+            
+            html += `<div class="detail-item"><div class="detail-label">Unterkunft</div><div class="detail-value">${req.needs_accommodation === 'yes' ? 'Ja' : 'Nein, Kunde organisiert'}</div></div>`;
+            html += `<div class="detail-item"><div class="detail-label">Mietauto</div><div class="detail-value">${req.needs_rental_car ? 'Ja' : 'Nein/Kunde organisiert'}</div></div>`;
+            
+            if (req.needs_accommodation === 'yes') {
+                html += `<div class="detail-item"><div class="detail-label">Hotelstandard</div><div class="detail-value">${req.hotel_standard}</div></div>`;
+                html += `<div class="detail-item"><div class="detail-label">Budget</div><div class="detail-value">max. ${req.max_budget} EUR/Nacht</div></div>`;
+                html += `<div class="detail-item"><div class="detail-label">Frühstück</div><div class="detail-value">${req.breakfast ? 'Ja' : 'Nein'}</div></div>`;
+                html += `<div class="detail-item"><div class="detail-label">Parken</div><div class="detail-value">${req.parking ? 'Ja' : 'Nein'}</div></div>`;
+                html += `<div class="detail-item"><div class="detail-label">Stornierbar</div><div class="detail-value">${req.flexible ? 'Ja' : 'Nein'}</div></div>`;
+                html += `<div class="detail-item"><div class="detail-label">Lage</div><div class="detail-value">${req.location_pref}</div></div>`;
+            }
+            
+            if (req.notes) {
+                html += `<div class="detail-item" style="grid-column: 1 / -1;"><div class="detail-label">Besondere Anforderungen</div><div class="detail-value">${req.notes}</div></div>`;
+            }
+            
+            html += `<div class="detail-item"><div class="detail-label">Erstellt</div><div class="detail-value">${new Date(req.created_at).toLocaleString('de-DE')}</div></div>`;
+            
+            html += '</div>';
+            
+            // Booking details if booked
+            if (req.status === 'booked') {
+                const bookStmt = db.prepare('SELECT * FROM bookings WHERE request_id = ?');
+                bookStmt.bind([requestId]);
+                
+                if (bookStmt.step()) {
+                    const booking = bookStmt.getAsObject();
+                    html += '<div class="section" style="margin-top: 20px;"><h3>Buchungsdetails</h3>';
+                    if (booking.confirmation_code) html += `<p><strong>Bestätigungscode:</strong> ${booking.confirmation_code}</p>`;
+                    if (booking.booking_details) html += `<p><strong>Details:</strong> ${booking.booking_details}</p>`;
+                    html += `<p><strong>Gebucht am:</strong> ${new Date(booking.booking_date).toLocaleString('de-DE')}</p>`;
+                    html += '</div>';
+                }
+                bookStmt.free();
+                
+                if (isEmployee) {
+                    html += '<div class="warning" style="margin-top: 20px;"><strong>⚠️ Wichtige Hinweise:</strong><br>- Rechnung auf Firmenadresse mitbringen<br>- Bei Krankheit bitte selbständig stornieren<br><br>📄 <strong>Rechnung hochladen:</strong> Upload-Funktion kommt in Phase 2<br>💰 <strong>Auslagen:</strong> Upload-Funktion kommt in Phase 2</div>';
+                }
+            }
+            
+            document.getElementById('detailsContent').innerHTML = html;
+            document.getElementById('detailsModal').classList.add('active');
         }
         
         // Hilfsfunktionen
